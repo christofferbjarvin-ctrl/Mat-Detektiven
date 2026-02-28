@@ -88,6 +88,84 @@ const NOVA_LABELS: Record<number, string> = {
   4: 'Ultrabearbeidet',
 };
 
+function highlightNova4Markers(text: string): { text: string; isMarker: boolean }[] {
+  const lowerText = text.toLowerCase();
+  const segments: { text: string; isMarker: boolean }[] = [];
+  // Build a list of all marker matches with their positions
+  const matches: { start: number; end: number }[] = [];
+
+  for (const marker of NOVA4_MARKERS) {
+    let searchFrom = 0;
+    while (true) {
+      const idx = lowerText.indexOf(marker, searchFrom);
+      if (idx === -1) break;
+      matches.push({ start: idx, end: idx + marker.length });
+      searchFrom = idx + 1;
+    }
+  }
+
+  if (matches.length === 0) {
+    return [{ text, isMarker: false }];
+  }
+
+  // Sort by start position, then by longest match first
+  matches.sort((a, b) => a.start - b.start || b.end - a.end);
+
+  // Merge overlapping matches
+  const merged: { start: number; end: number }[] = [matches[0]];
+  for (let i = 1; i < matches.length; i++) {
+    const last = merged[merged.length - 1];
+    if (matches[i].start <= last.end) {
+      last.end = Math.max(last.end, matches[i].end);
+    } else {
+      merged.push(matches[i]);
+    }
+  }
+
+  // Build segments
+  let cursor = 0;
+  for (const m of merged) {
+    if (cursor < m.start) {
+      segments.push({ text: text.slice(cursor, m.start), isMarker: false });
+    }
+    segments.push({ text: text.slice(m.start, m.end), isMarker: true });
+    cursor = m.end;
+  }
+  if (cursor < text.length) {
+    segments.push({ text: text.slice(cursor), isMarker: false });
+  }
+
+  return segments;
+}
+
+function HighlightedIngredients({ text, isNova4 }: { text: string; isNova4: boolean }) {
+  if (!isNova4) {
+    return <Text style={styles.ingredients}>{text}</Text>;
+  }
+
+  const segments = highlightNova4Markers(text);
+  const hasMarkers = segments.some((s) => s.isMarker);
+
+  return (
+    <View style={{ alignSelf: 'flex-start' as const }}>
+      <Text style={styles.ingredients}>
+        {segments.map((seg, i) =>
+          seg.isMarker ? (
+            <Text key={i} style={styles.markedIngredient}>{seg.text}</Text>
+          ) : (
+            <Text key={i}>{seg.text}</Text>
+          )
+        )}
+      </Text>
+      {hasMarkers && (
+        <Text style={styles.markerHint}>
+          Markerte ingredienser indikerer ultrabearbeidede tilsetningsstoffer
+        </Text>
+      )}
+    </View>
+  );
+}
+
 const KASSAL_API_KEY = 'g9NOjtCkK8kW9orWpl0XQva4D9Jow1BKTHsAVF4S';
 
 async function fetchFromOpenFoodFacts(barcode: string): Promise<(Product & { _raw?: any }) | null> {
@@ -167,40 +245,48 @@ async function searchOffAlternatives(
   const targetLevels = currentNova === 4 ? [3, 2] : currentNova === 3 ? [2, 1] : [1];
   const categoriesToTry = [...categories].reverse().slice(0, 3);
 
+  const parseAlternatives = (products: any[], targetNova: number): Alternative[] => {
+    const seen = new Set<string>();
+    const alternatives: Alternative[] = [];
+    for (const p of products) {
+      const name = p.product_name?.trim();
+      if (!name || seen.has(name.toLowerCase())) continue;
+      seen.add(name.toLowerCase());
+      alternatives.push({
+        name,
+        novaGroup: p.nova_group ?? targetNova,
+        imageUrl: p.image_small_url || null,
+        ingredients: p.ingredients_text || 'Ingen ingredienser tilgjengelig',
+      });
+      if (alternatives.length >= 3) break;
+    }
+    return alternatives;
+  };
+
   for (const targetNova of targetLevels) {
     for (const category of categoriesToTry) {
       const catName = category.replace('en:', '');
-      try {
-        const res = await fetch(
-          `https://world.openfoodfacts.org/api/v2/search?categories_tags_en=${catName}&nova_groups_tags=${targetNova}&sort_by=unique_scans_n&page_size=10&fields=product_name,nova_group,image_small_url,ingredients_text`
-        );
-        const data = await res.json();
-        const products = data?.products;
-        if (!products || products.length === 0) continue;
+      const base = `https://world.openfoodfacts.org/api/v2/search?categories_tags_en=${catName}&nova_groups_tags=${targetNova}&sort_by=unique_scans_n&page_size=10&fields=product_name,nova_group,image_small_url,ingredients_text`;
 
-        const seen = new Set<string>();
-        const alternatives: Alternative[] = [];
+      // Kjør Norge-søk og fallback parallelt for å spare tid
+      const [norwayRes, fallbackRes] = await Promise.all([
+        fetch(`${base}&countries_tags_en=norway`).then(r => r.json()).catch(() => null),
+        fetch(`${base}&lc=nb`).then(r => r.json()).catch(() => null),
+      ]);
 
-        for (const p of products) {
-          const name = p.product_name?.trim();
-          if (!name || seen.has(name.toLowerCase())) continue;
-          seen.add(name.toLowerCase());
+      // Prioriter norske resultater
+      const norwayAlts = norwayRes?.products?.length > 0
+        ? parseAlternatives(norwayRes.products, targetNova)
+        : [];
+      if (norwayAlts.length > 0) {
+        return { alternatives: norwayAlts, targetNova };
+      }
 
-          alternatives.push({
-            name,
-            novaGroup: p.nova_group ?? targetNova,
-            imageUrl: p.image_small_url || null,
-            ingredients: p.ingredients_text || 'Ingen ingredienser tilgjengelig',
-          });
-
-          if (alternatives.length >= 3) break;
-        }
-
-        if (alternatives.length > 0) {
-          return { alternatives, targetNova };
-        }
-      } catch {
-        continue;
+      const fallbackAlts = fallbackRes?.products?.length > 0
+        ? parseAlternatives(fallbackRes.products, targetNova)
+        : [];
+      if (fallbackAlts.length > 0) {
+        return { alternatives: fallbackAlts, targetNova };
       }
     }
   }
@@ -514,7 +600,10 @@ export default function ScanScreen() {
               )}
 
               <Text style={styles.sectionTitle}>Ingredienser</Text>
-              <Text style={styles.ingredients}>{product.ingredients}</Text>
+              <HighlightedIngredients
+                text={product.ingredients}
+                isNova4={product.novaGroup === 4}
+              />
 
               {/* Mat-Detektiven: byttet */}
               {altLoading && (
@@ -760,6 +849,18 @@ const styles = StyleSheet.create({
     color: '#555',
     lineHeight: 20,
     alignSelf: 'flex-start',
+  },
+  markedIngredient: {
+    backgroundColor: '#FFCDD2',
+    color: '#C62828',
+    fontWeight: '600',
+    borderRadius: 2,
+  },
+  markerHint: {
+    fontSize: 12,
+    color: '#888',
+    fontStyle: 'italic',
+    marginTop: 6,
   },
   nutritionCard: {
     width: '100%',
