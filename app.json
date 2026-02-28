@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "Matvett",
-    "slug": "Matvett",
+    "name": "Mat-Detektiven",
+    "slug": "Mat-Detektiven",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "matvett",
+    "scheme": "mat-detektiven",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {

@@ -1,98 +1,213 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import { StyleSheet, Text, View, Pressable, ScrollView } from 'react-native';
+import { useRouter } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+const NOVA_INFO = [
+  {
+    group: 1,
+    color: '#4CAF50',
+    bgColor: '#E8F5E9',
+    emoji: '🥦',
+    title: 'NOVA 1',
+    subtitle: 'Ubearbeidet',
+    description: 'Frukt, grønnsaker, egg, kjøtt og fisk uten tilsetninger.',
+  },
+  {
+    group: 2,
+    color: '#66BB6A',
+    bgColor: '#F1F8E9',
+    emoji: '🧈',
+    title: 'NOVA 2',
+    subtitle: 'Lite bearbeidet',
+    description: 'Olje, smør, sukker, salt, mel og pasta.',
+  },
+  {
+    group: 3,
+    color: '#FFA000',
+    bgColor: '#FFF8E1',
+    emoji: '🧀',
+    title: 'NOVA 3',
+    subtitle: 'Bearbeidet',
+    description: 'Hermetikk, ost, brød og røkt fisk.',
+  },
+  {
+    group: 4,
+    color: '#E53935',
+    bgColor: '#FFEBEE',
+    emoji: '🍕',
+    title: 'NOVA 4',
+    subtitle: 'Ultrabearbeidet',
+    description: 'Brus, pølser, chips og frossenpizza.',
+  },
+];
 
 export default function HomeScreen() {
-  return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+  const router = useRouter();
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+  return (
+    <ScrollView style={styles.scroll} bounces={false}>
+      <LinearGradient
+        colors={['#2E7D32', '#43A047', '#66BB6A']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.hero}
+      >
+        <Text style={styles.heroEmoji}>🔍🥑</Text>
+        <Text style={styles.heroTitle}>Mat-Detektiven</Text>
+        <Text style={styles.heroSubtitle}>
+          Skann strekkoder og finn ut hvor bearbeidet maten din egentlig er
+        </Text>
+      </LinearGradient>
+
+      <View style={styles.content}>
+        <View style={styles.infoCard}>
+          <Text style={styles.infoTitle}>Hva er NOVA-skalaen?</Text>
+          <Text style={styles.infoText}>
+            NOVA klassifiserer mat i fire grupper basert på grad av industriell bearbeiding. Jo høyere gruppe, jo mer bearbeidet.
+          </Text>
+        </View>
+
+        {NOVA_INFO.map((item) => (
+          <View key={item.group} style={[styles.novaCard, { backgroundColor: item.bgColor }]}>
+            <View style={styles.novaCardHeader}>
+              <Text style={styles.novaEmoji}>{item.emoji}</Text>
+              <View style={styles.novaCardTitles}>
+                <Text style={[styles.novaCardTitle, { color: item.color }]}>{item.title}</Text>
+                <Text style={styles.novaCardSubtitle}>{item.subtitle}</Text>
+              </View>
+              <View style={[styles.novaIndicator, { backgroundColor: item.color }]} />
+            </View>
+            <Text style={styles.novaCardDescription}>{item.description}</Text>
+          </View>
+        ))}
+
+        <Pressable onPress={() => router.push('/scan')}>
+          <LinearGradient
+            colors={['#2E7D32', '#43A047']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.scanButton}
+          >
+            <Text style={styles.scanIcon}>📷</Text>
+            <Text style={styles.scanButtonText}>Skann en vare</Text>
+          </LinearGradient>
+        </Pressable>
+      </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  scroll: {
+    flex: 1,
+    backgroundColor: '#f8f9fa',
   },
-  stepContainer: {
-    gap: 8,
+  hero: {
+    paddingTop: 70,
+    paddingBottom: 36,
+    paddingHorizontal: 28,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
+  },
+  heroEmoji: {
+    fontSize: 44,
+    marginBottom: 12,
+  },
+  heroTitle: {
+    fontSize: 38,
+    fontWeight: '900',
+    color: '#fff',
     marginBottom: 8,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  heroSubtitle: {
+    fontSize: 16,
+    color: 'rgba(255,255,255,0.9)',
+    lineHeight: 23,
+  },
+  content: {
+    padding: 20,
+    paddingTop: 24,
+    paddingBottom: 40,
+  },
+  infoCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  infoTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1a1a1a',
+    marginBottom: 8,
+  },
+  infoText: {
+    fontSize: 14,
+    color: '#666',
+    lineHeight: 21,
+  },
+  novaCard: {
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 12,
+  },
+  novaCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  novaEmoji: {
+    fontSize: 28,
+    marginRight: 12,
+  },
+  novaCardTitles: {
+    flex: 1,
+  },
+  novaCardTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  novaCardSubtitle: {
+    fontSize: 13,
+    color: '#555',
+    fontWeight: '500',
+  },
+  novaIndicator: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+  },
+  novaCardDescription: {
+    fontSize: 13,
+    color: '#555',
+    lineHeight: 19,
+    marginLeft: 40,
+  },
+  scanButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 18,
+    borderRadius: 14,
+    marginTop: 10,
+    shadowColor: '#2E7D32',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  scanIcon: {
+    fontSize: 22,
+    marginRight: 10,
+  },
+  scanButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '700',
   },
 });
