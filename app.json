@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Mat-Detektiven",
-    "slug": "Mat-Detektiven",
+    "slug": "mat-detektiven",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -12,6 +12,8 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.matdetektiven.app",
+      "versionCode": 1,
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -43,6 +45,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "182e58ef-1665-4f99-9fc4-b70ec8934e54"
+      }
+    },
+    "owner": "nordic-smart-solutions"
   }
 }

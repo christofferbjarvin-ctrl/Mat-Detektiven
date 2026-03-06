@@ -166,7 +166,7 @@ function HighlightedIngredients({ text, isNova4 }: { text: string; isNova4: bool
   );
 }
 
-const KASSAL_API_KEY = 'g9NOjtCkK8kW9orWpl0XQva4D9Jow1BKTHsAVF4S';
+const KASSAL_API_KEY = process.env.EXPO_PUBLIC_KASSAL_API_KEY ?? '';
 
 async function fetchFromOpenFoodFacts(barcode: string): Promise<(Product & { _raw?: any }) | null> {
   try {
